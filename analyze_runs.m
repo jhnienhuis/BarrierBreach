@@ -1,6 +1,6 @@
 function analyze_runs
 
-model_runs = {'GapSize','PeakRoughness','Roughness','Duration','Width','StormPeak'};
+model_runs = {'GapSize','Roughness','PeakRoughness','Duration','Width','StormPeak','vegdensity'};
 
 for ii=1:length(model_runs),
     analyze_run(model_runs{ii});
@@ -9,15 +9,10 @@ end
 
 function analyze_run(name)
 
-
-%things to do
-%make phase space
-
-
-
 addpath('D:\Dropbox\_Tools\delft3d_matlab')
 out = load(name);
 if ~isfield(out,'lipwidth'), out.lipwidth=50; end
+if ~isfield(out,'vegdensity'), out.vegdensity=5; end
 runsdir = out.runsdir; out = rmfield(out,'runsdir');
 runname =out.runname; out = rmfield(out,'runname');
 if isfield(out,'output'), out = rmfield(out,'output'); end
@@ -95,6 +90,7 @@ for irun = 1:prod(sizes)
     output.height(irun) = p.height;
     output.lipwidth(irun) = p.lipwidth;
     output.duration(irun) = p.duration;
+    output.vegdensity(irun) = p.vegdensity;
     
     [col,row] = find(z(idx,idy,irun)<0);
     if isempty(col),

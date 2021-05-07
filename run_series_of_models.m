@@ -1,33 +1,20 @@
 function run_series_of_models
 
-%we want to predict breach vs. overwash deposit
-%run series of simulations
-%comparison against sandy
-
-%vary storm duration/max height
-%barrier width/roughness
-
-%extract breach yes/no
-%volume overwash
-%
-
-%which parameters
-
 out.storm_peak = 3; %3 is default
 out.width = 300; %300 is default
-out.height = 1:0.5:2.5; %lip height, 2 is default
+out.height = 2; %lip height, 2 is default
 out.roughness = 0.1; %10% is default. percentage coverage  vegetation on island(?) density and height: https://link.springer.com/content/pdf/10.1007/s11258-005-2467-5.pdf
 out.duration = 1; %1 is default
-out.lipwidth = 10:10:100; %25 is default
+out.lipwidth = 25; %25 is default
+out.vegdensity = 0:0.1:1; %0.25 is default (or 50?)
 
 %put parameter in struct
 out_names = fieldnames(out);
 out_cell = struct2cell(out);
 sizes = cellfun('prodofsize', out_cell);
 
-%other relevant parameters
-out.runsdir = 'F:\Delft3D\BarrierIsland';
-out.runname = ['Test'];
+out.runsdir = 'D:\Delft3D\BarrierIsland';
+out.runname = ['vegdensity'];
 runid='bypass';
 
 inputdir=[out.runsdir filesep 'ModelRun1' filesep];
@@ -56,11 +43,12 @@ for irun = 1:prod(sizes)
     %adjust width
     island_edge = dep_maker_func(rundir,p.width,p.height,p.lipwidth);
     
-    %adjust vegetation
+    %adjust vegetation cover
     findreplace([rundir filesep runid '.veg'],['1 1 171 111 1 0.8'],['1 1 171 111 1 ' num2str(1-p.roughness,'%1.3f')]); 
     findreplace([rundir filesep runid '.veg'],['10 1 60 111 2 0.2'],['10 1 ' num2str(island_edge,'%2.0f') ' 111 2 ' num2str(p.roughness,'%1.3f')]); 
-
     
+    %adjust veg density
+    findreplace([rundir filesep 'baptist05.trt'],['2 153 0.5 50 1 45'],['2 153 0.5 ' num2str(p.vegdensity,'%2.2f') ' 1 45 ']); 
     
     % And run the simulation
     curdir=pwd;
