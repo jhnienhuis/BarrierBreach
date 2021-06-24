@@ -113,14 +113,18 @@ Vnormobs(overwash_volume<1) = 10; %breach
 scatter(Vowt1(a)./Vbar_sandy(a),Vnormobs(a),'sr','filled','markeredgecolor','k')
 scatter(Vowt1(~a)./Vbar_sandy(~a),Vnormobs(~a),'sg','filled','markeredgecolor','k')
 
+
+
 %percentage of breaches for pot>1
 pred = Vowt1(~a)./Vbar_sandy(~a);
 obs = Vnormobs(~a);
-sum(pred>1 & obs>1)./sum(pred>1);
+%two of out three breach observations are correct
+sum(pred>1 & obs>1)./sum(obs>1);
 
 %percentage of overwashes for pot<1
-sum(pred<1 & obs<1)./sum(pred<1);
+sum(pred<1 & obs<1)./sum(obs<1);
 
+%correlation coefficient: corrcoef((Vowt1(~a & Vnormobs<1)),(overwash_volume(~a & Vnormobs<1))).^2
 
 xlim([1e-3 1e2]),ylim([1e-5 1e2]);
 %set(gca,'XTick',[logspace(-2, 1,6)])
