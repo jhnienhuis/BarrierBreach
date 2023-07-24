@@ -1,5 +1,5 @@
 clr
-addpath('D:\Dropbox\_Tools\delft3d_matlab')
+addpath('D:\Drive\_Tools\delft3d_matlab')
 load('PeakRoughness');
 
 %inputdir=[runsdir filesep 'ModelRun1' filesep];
@@ -19,12 +19,16 @@ storm_time = [0 (12-output.duration(idx))*60 1+(12+output.duration(idx))*60 24*6
 
 rundir=[runsdir filesep runname '_' num2str(idx,'%1.0f')];
 
+%list of options in delft3d
+
+
 %rundir='PeakRoughness_4';
 
 trim = vs_use([rundir filesep 'trim-bypass.dat'],[rundir filesep 'trim-bypass.def'],'quiet');
 trih = vs_use([rundir filesep 'trih-bypass.dat'],[rundir filesep 'trih-bypass.def'],'quiet');
 t = vs_let(trim,'map-infsed-serie',{0},'MORFT','quiet');
 
+t = vs_let(trim,'map-infsed-serie',{0});
 
 xc=vs_get(trim,'map-const','XCOR','quiet!');
 yc=vs_get(trim,'map-const','YCOR','quiet!');

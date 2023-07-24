@@ -9,14 +9,14 @@ gravity = 10;
 Rsed = 1.65;
 
 idx = 27; %breach
-%idx = 4; %overwash
+idx = 4; %overwash
 
+  
 
 storm_surge = [1 output.storm_peak(idx) output.storm_peak(idx) 1 1];
 storm_time = [0 (12-output.duration(idx))*60 1+(12+output.duration(idx))*60 24*60 26*60];
 
 rundir=[runsdir filesep runname '_' num2str(idx,'%1.0f')];
-
 savename = ['D:\Dropbox\2021 BarrierBreach JGR\' runname '_' num2str(idx,'%1.0f') '.gif'];
 
 trim = vs_use([rundir filesep 'trim-bypass.dat'],[rundir filesep 'trim-bypass.def'],'quiet');
@@ -34,11 +34,6 @@ y_throat = 57;
 
 z = permute(-1*vs_let(trim,'map-sed-series',{0},'DPS',{0,0},'quiet'),[2 3 1]);
 h = vs_let(trim,'map-series',{0},'S1',{0,0},'quiet');
-
-%calculate total volume of sediment
-%qw = vs_let(trih,'his-series',{0},'CTR',{1},'quiet'); %m3s-1
-%qs_bed = vs_let(trih,'his-sed-series',{0},'SBTR',{1,1},'quiet');
-%qs_sus = vs_let(trih,'his-sed-series',{0},'SSTR',{1,1},'quiet'); %kgm-3
 
 dz = z-z(:,:,1);
 dz(abs(dz)>10) = 0;
@@ -69,6 +64,7 @@ qs_cum = cumsum(1/(1-0.4).*output.qs_cum(idx,:))';
 h2 = plot(a(2),t*24,[vbar qs_cum]);
 plot(a(2),[0 24],[0 0],':k')
 c = get(h2,'Color'); 
+
 
 for kk=1:length(t)
     zmap = squeeze(z(:,:,kk));
@@ -121,134 +117,106 @@ imwrite(imind,cm,savename,'gif','WriteMode','append','DelayTime',1/5);
 
 
 
+%% side by side breaching and overwash
+addpath('D:\Dropbox\_Tools\delft3d_matlab')
+load('PeakRoughness');
+
+inputdir=[runsdir filesep 'ModelRun1' filesep];
+
+d50 = 2e-4;
+gravity = 10;
+Rsed = 1.65;
+
+idx = 4; %overwash
+idx2 = 27; %breach
+
+savename = ['D:\Dropbox\2021 BarrierBreach JGR\' runname '_' num2str(idx,'%1.0f') '_' num2str(idx2,'%1.0f') '.gif'];
+
+rundir=[runsdir filesep runname '_' num2str(idx,'%1.0f')];
+trim = vs_use([rundir filesep 'trim-bypass.dat'],[rundir filesep 'trim-bypass.def'],'quiet');
+t = vs_let(trim,'map-infsed-serie',{0},'MORFT','quiet');
+
+xc=vs_get(trim,'map-const','XCOR','quiet!');
+yc=vs_get(trim,'map-const','YCOR','quiet!');
+
+cell_area = cellarea(xc,yc);
+xcc = xc(:,1);
+ycc = yc(1,:);
+
+y_throat = 57;
+
+z = permute(-1*vs_let(trim,'map-sed-series',{0},'DPS',{0,0},'quiet'),[2 3 1]);
+h = vs_let(trim,'map-series',{0},'S1',{0,0},'quiet');
+
+rundir=[runsdir filesep runname '_' num2str(idx2,'%1.0f')];
+trim = vs_use([rundir filesep 'trim-bypass.dat'],[rundir filesep 'trim-bypass.def'],'quiet');
+z_2 = permute(-1*vs_let(trim,'map-sed-series',{0},'DPS',{0,0},'quiet'),[2 3 1]);
+h_2 = vs_let(trim,'map-series',{0},'S1',{0,0},'quiet');
 
 
 
+fig = figure('color','white','Name','Breach_WaterSurface','visible','off','Units','Pixels','PaperUnits','Centimeters','Units','Centimeter',...
+    'InvertHardCopy', 'off','NextPlot','add','Position',[5 5 35 15]);
 
+a = tight_subplot(1,2,0.02,0.02);
 
-%{
-fig = figure('color','white','Name','Vegetation+Compaction','visible','off','Units','Pixels','PaperUnits','Centimeters','Units','Centimeter',...
-    'InvertHardCopy', 'off','NextPlot','add','Position',[5 5 45 15]);
+for ii=1:length(a), hold(a(ii),'on'), box(a(ii),'on'), end
 
-a = tight_subplot(1,2,0.1,0.1,0.1);
+cmap = demcmap([-3 3]);
 
-tick_max = max([splay_v./1e6;s_discharge./1e3]);
-dis_tick = (10^floor(log10(tick_max)))*ceil(tick_max/(10^floor(log10(tick_max))));
+title(a(1),'Washover')
+title(a(2),'Breach')
 
-
-set(a(1),'CLim',[-2 4],'NextPlot','add','XLim',[-0.25 10],'YLim',[-3 3],'Layer','top','DataAspectRatio',[1 1 1])
-set(a(2),'NextPlot','add','XLim',[0 10],'YLim',[0 dis_tick],'Layer','top')
-set(a(2),'PlotBoxAspectRatio',get(a(1),'PlotBoxAspectRatio'))
-
-c1 = colorbar('peer',a(1),'East','color','w');
-xlabel(c1,'Bed level (m)','color','w')
-box(a(2),'on')
-box(a(1),'on')
-
-xlabel(a(1),'Cross-levee (km)');
-ylabel(a(1),'Along-levee (km)');
-
-xlabel(a(2),'Time (yr)');
-ylabel(a(2),{'Discharge into Splay (10^3 m^3s^-^1)';'\color{red}Splay Volume (10^6 m^3)'});
-
-xticklabels(a(1),'auto')
-xticklabels(a(2),'auto')
-yticklabels(a(1),'auto')
-yticklabels(a(2),'auto')
-
-for i=1:numel(t)
+for kk=1:length(t)
+    zmap = squeeze(z(:,:,kk));
+    hmap = squeeze(h(kk,:,:));   
+    nanmap = (-0.2+hmap)<=zmap;
+    hmap = min(-0.1,1+(hmap.*-1));
+    hmap(nanmap) = nan;
+          
+    h0 = pcolor(a(1),xc,yc,zmap);
+    h1 = pcolor(a(1),xc,yc,hmap);
     
-    i_dis = ceil(i*length(t_discharge)./length(t));
+    shading(a(1),'flat'),
+    set(a(1),'CLim',[-3 3]);
+    set(a(1),'XLim',[0 500],'YLim',[-200 200],'DataAspectRatio',[1 1 1])
+    set(a(1),'Layer','top','XTickLabels','','YTickLabels','')
     
-    if mod(i,10)==1,i, end
+    colormap(cmap)
+    cb = colorbar(a(1),'location','east');
+    cb.TickLabels = {'3','2','1','0','1','2','3'};
+    xlabel(cb,'<- Water elevation (m) | Barrier elevation (m) ->')
     
-    title(a(1),[' Time: ' num2str(t(i)./365,'%3.1f') ' years'],'interpreter','none')
     
-    %h2 = plot(a(1),x(2:end),[-1*zchannel(i,(2:end)); wlchannel(i,(2:end)); u(i,2:end)]);
+    zmap = squeeze(z_2(:,:,kk));
+    hmap = squeeze(h_2(kk,:,:));   
+    nanmap = (-0.2+hmap)<=zmap;
+    hmap = min(-0.1,1+(hmap.*-1));
+    hmap(nanmap) = nan;
+          
+    h2 = pcolor(a(2),xc,yc,zmap);
+    h3 = pcolor(a(2),xc,yc,hmap);
     
-    
-    h1 = pcolor(x./1000,y(2:end)./1000,squeeze(-1*bl(i,:,2:end))','Parent',a(1)); shading(a(1),'flat')
-    
-    h2 = plot(a(2),t_discharge./365, s_discharge./1e3,'-k',t_discharge(i_dis)./365, s_discharge(i_dis)./1e3,'ok');
-    h3 = plot(a(2),t_discharge./365, splay_v./1e6,'-r',t_discharge(i_dis)./365, splay_v(i_dis)./1e6,'or');
+    shading(a(2),'flat'),
+    set(a(2),'CLim',[-3 3]);
+    set(a(2),'XLim',[0 500],'YLim',[-200 200],'DataAspectRatio',[1 1 1])
+    set(a(2),'Layer','top','XTickLabels','','YTickLabels','')
+   
+
     
     [imind,cm] = rgb2ind(frame2im(getframe(fig)),64);
-    if i == 1;
-        imwrite(imind,cm,[case_name '.gif'],'gif', 'Loopcount',inf,'DelayTime',1/30);
+    if kk == 1;
+        imwrite(imind,cm,savename,'gif', 'Loopcount',inf,'DelayTime',1/20);
     else
-        imwrite(imind,cm,[case_name '.gif'],'gif','WriteMode','append','DelayTime',1/30);
+        imwrite(imind,cm,savename,'gif','WriteMode','append','DelayTime',1/20);
     end
     
+    delete(h0)
     delete(h1)
     delete(h2)
     delete(h3)
     
-end
-
-imwrite(imind,cm,[case_name '.gif'],'gif','WriteMode','append','DelayTime',1/5);
-
-
-%% closure movie
-case_name = 'BatchMidDomain_Head5_trial12';
-case_name2 = 'BatchMidDomain_Veg3';
-load([dropbox filesep 'Splay' filesep case_name])
-c2 = load([dropbox filesep 'Splay' filesep case_name2]);
-y(1) = 3200; y(2) = 3100; y(3) = 3000;
-
-y(end-1) = -3100; y(end) = -3200;
-fig = figure('color','white','Name','Vegetation+Compaction','visible','off','Units','Pixels','PaperUnits','Centimeters','Units','Centimeter',...
-    'InvertHardCopy', 'off','NextPlot','add','Position',[5 5 15 13.5]);
-
-a = tight_subplot(1,2,0.03,0.03,0.01);
-%demcmap([-2.5 3.5])
-set(a(1),'CLim',[-2 4],'NextPlot','add','YLim',[-0.25 10],'XLim',[-3 3],'Layer','top','DataAspectRatio',[1 1 1])
-set(a(2),'CLim',[-2 4],'NextPlot','add','YLim',[-0.25 10],'XLim',[-3 3],'Layer','top','DataAspectRatio',[1 1 1])
-set(a(2),'PlotBoxAspectRatio',get(a(1),'PlotBoxAspectRatio'))
-
-c1 = colorbar('peer',a(2),'North','color','w');
-xlabel(c1,'Bed level (m)','color','w')
-box(a(2),'on')
-box(a(1),'on')
-
-%xlabel(a(1),'Avulsion');
-%ylabel(a(1),'Along-levee (km)');
-%xlabel(a(2),'Successful diversion');
-%ylabel(a(2),'Along-levee (km)');
-
-set(a(1),'fontsize',14)
-set(a(2),'fontsize',14)
-
-xticklabels(a(1),'')
-xticklabels(a(2),'')
-yticklabels(a(1),'')
-yticklabels(a(2),'')
-%set(gcf,'visible','on')
-%
-for i=1:3:700
-    
-    
-    
-    if mod(i,10)==1,i, end
-    
-    title(a(1),[' Time: ' num2str(t(ceil(i/10))./365,'%3.1f') ' years'],'interpreter','none')
-    
-    h1 = pcolor(y(2:end)./1000,x./1000,squeeze(-1*bl(ceil(i/10),:,2:end)),'Parent',a(1)); shading(a(1),'flat')
-    %text(a(1),-2.5,10,'A','fontsize',25)
-    title(a(2),[' Time: ' num2str(c2.t(i)./365,'%3.1f') ' years'],'interpreter','none')
-    h2 = pcolor(y(2:end)./1000,x./1000,squeeze(-1*c2.bl(i,:,2:end)),'Parent',a(2)); shading(a(2),'flat')
-    %text(a(2),-2.5,10,'B','fontsize',25)
-    %set(gcf,'Visible','on'), break
-    [imind,cm] = rgb2ind(frame2im(getframe(fig)),32);
-    if i == 1;
-        imwrite(imind,cm,[case_name 'comparison2.gif'],'gif', 'Loopcount',inf,'DelayTime',1/30);
-    else
-        imwrite(imind,cm,[case_name 'comparison2.gif'],'gif','WriteMode','append','DelayTime',1/30);
-    end
-    
-    delete(h1)
-    delete(h2)
     
 end
 
-imwrite(imind,cm,[case_name 'comparison3.gif'],'gif','WriteMode','append','DelayTime',1/5);
-%}
+imwrite(imind,cm,savename,'gif','WriteMode','append','DelayTime',1/5);
